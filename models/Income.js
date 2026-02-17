@@ -7,13 +7,19 @@ const IncomeSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-
+    incomeTypeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "IncomeCategory",
+      required: true,
+    },
+    workspaceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      required: true,
+    },
     icon: { type: String },
-
-    source: { type: String, required: true }, // Example: Salary, Freelance, etc.
-
+    source: { type: String }, // Legacy field (optional)
     amount: { type: Number, required: true },
-
     date: { type: Date, default: Date.now },
   },
   { timestamps: true },

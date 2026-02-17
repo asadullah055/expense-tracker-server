@@ -5,16 +5,16 @@ const xlsx = require("xlsx");
 exports.addIncome = async (req, res) => {
   const userId = req.user.id;
   try {
-    const { icon, source, amount, date } = req.body;
+    const { incomeTypeId, workspaceId, amount, date } = req.body;
     // Validation: Check for missing fields
-    if (!source || !amount || !date) {
+    if (!incomeTypeId || !workspaceId || !amount || !date) {
       return res.status(400).json({ message: "All fields are required" });
     }
     const newIncome = new Income({
       userId,
-      icon,
-      source,
+      incomeTypeId,
       amount,
+      workspaceId,
       date: new Date(date),
     });
     await newIncome.save();
