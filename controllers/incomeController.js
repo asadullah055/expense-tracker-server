@@ -1,6 +1,7 @@
 // Add Income Source
 
 const Income = require("../models/Income");
+const { isValidObjectId } = require("mongoose");
 const xlsx = require("xlsx");
 exports.addIncome = async (req, res) => {
   const userId = req.user.id;
@@ -30,8 +31,37 @@ exports.addIncome = async (req, res) => {
 exports.getAllIncome = async (req, res) => {
   const userId = req.user.id;
   try {
-    const income = await Income.find({ userId }).sort({ date: -1 });
-    res.status(200).json(income);
+    const { workspaceId } = req.query;
+    const query = { userId };
+
+    if (workspaceId) {
+      if (!isValidObjectId(workspaceId)) {
+        return res.status(400).json({ message: "Invalid workspaceId" });
+      }
+      query.workspaceId = workspaceId;
+    }
+
+    const income = await Income.find(query)
+      .populate("incomeTypeId", "category type")
+      .sort({ date: -1 });
+
+    const response = income.map((item) => {
+      const obj = item.toObject();
+      return {
+        _id: obj._id,
+        userId: obj.userId,
+        workspaceId: obj.workspaceId,
+        amount: obj.amount,
+        category: obj.incomeTypeId?.category || null,
+        date: obj.date,
+        createdAt: obj.createdAt,
+        updatedAt: obj.updatedAt,
+        incomeTypeId: obj.incomeTypeId,
+        __v: obj.__v,
+      };
+    });
+
+    res.status(200).json(response);
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Server Error" });
@@ -42,7 +72,22 @@ exports.getAllIncome = async (req, res) => {
 
 exports.deleteIncome = async (req, res) => {
   try {
-    await Income.findOneAndDelete(req.params.id);
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid income id" });
+    }
+
+    const deletedIncome = await Income.findOneAndDelete({
+      _id: id,
+      userId,
+    });
+
+    if (!deletedIncome) {
+      return res.status(404).json({ message: "Income not found" });
+    }
+
     res.status(200).json({ message: "Income deleted successfully" });
   } catch (error) {
     console.log(error);
@@ -53,22 +98,41 @@ exports.deleteIncome = async (req, res) => {
 // Download Excel
 
 exports.downloadIncomeExcel = async (req, res) => {
+
   const userId = req.user.id;
 
   try {
-    const income = await Income.find({ userId }).sort({ date: -1 });
+    const { workspaceId } = req.query;
+
+    if (!workspaceId || !isValidObjectId(workspaceId)) {
+      return res.status(400).json({ message: "Valid workspaceId is required" });
+    }
+
+    const income = await Income.find({ userId, workspaceId })
+      .populate("incomeTypeId", "category")
+      .sort({ date: -1 });
 
     // Prepare data for Excel
     const data = income.map((item) => ({
-      Source: item.source,
+      Category: item.incomeTypeId?.category || "",
       Amount: item.amount,
       Date: item.date,
     }));
+
     const wb = xlsx.utils.book_new();
     const ws = xlsx.utils.json_to_sheet(data);
     xlsx.utils.book_append_sheet(wb, ws, "Income");
-    xlsx.writeFile(wb, "income_details.xlsx");
-    res.download("income_details.xlsx");
+
+    const excelBuffer = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="income_details_${workspaceId}.xlsx"`,
+    );
+    return res.status(200).send(excelBuffer);
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Server Error" });

@@ -50,5 +50,24 @@ const getAllExpenseCategory = async (req, res) => {
   }
 };
 
+const getExpenseCategoriesByType = async (req, res) => {
 
-module.exports = { addExpenseCategory, getAllExpenseCategory };
+  try {
+    const { type } = req.params; // Personal / Company
+
+    const categories = await ExpenseCategories
+      .find({ type })
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(categories);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+module.exports = {
+  addExpenseCategory,
+  getAllExpenseCategory,
+  getExpenseCategoriesByType,
+};

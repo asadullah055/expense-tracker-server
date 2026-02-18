@@ -17,8 +17,6 @@ const IncomeSchema = new mongoose.Schema(
       ref: "Company",
       required: true,
     },
-    icon: { type: String },
-    source: { type: String }, // Legacy field (optional)
     amount: { type: Number, required: true },
     date: { type: Date, default: Date.now },
   },

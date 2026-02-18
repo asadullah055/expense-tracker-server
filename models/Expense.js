@@ -7,13 +7,17 @@ const ExpenseSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-
-    icon: { type: String },
-
-    category: { type: String, required: true }, // Example: Food, Rent, Groceries
-
+    expenseTypeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ExpenseCategory",
+      required: true,
+    },
+    workspaceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      required: true,
+    },
     amount: { type: Number, required: true },
-
     date: { type: Date, default: Date.now },
   },
   { timestamps: true },

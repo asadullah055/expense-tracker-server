@@ -6,7 +6,8 @@ const {
   getUserInfo,
 } = require("../controllers/authController");
 const { protect } = require("../middleware/authMiddleware");
-const upload = require("../middleware/uploadMiddleware");
+const { formidable } = require("formidable");
+const cloudinary = require("../config/cloudinary");
 
 const router = express.Router();
 
@@ -16,28 +17,36 @@ router.post("/login", loginUser);
 
 router.get("/getuser", protect, getUserInfo);
 
-router.post("/upload-image", upload.single("image"), (req, res) => {
+router.post("/upload-image", (req, res) => {
+  const form = formidable({ multiples: false });
 
-  if (!req.file) {
-    return res.status(400).json({ message: "No file uploaded" });
-  }
+  form.parse(req, async (err, fields, files) => {
+    try {
+      if (err) {
+        return res.status(400).json({ message: "Invalid form data" });
+      }
 
-  const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+      const uploadedFile = Array.isArray(files.image)
+        ? files.image[0]
+        : files.image;
 
-  res.status(200).json({ imageUrl });
+      if (!uploadedFile?.filepath) {
+        return res.status(400).json({
+          message: "Image file is required in `image` field",
+        });
+      }
+
+      const result = await cloudinary.uploader.upload(uploadedFile.filepath, {
+        folder: "expense-tracker/profile-images",
+        resource_type: "image",
+      });
+
+      return res.status(200).json({ imageUrl: result.secure_url });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "Error uploading image" });
+    }
+  });
 });
 
 module.exports = router;
-/* const cloudinary = require("cloudinary").v2;
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-cloudinary.uploader.upload(req.file.path, (error, result) => {
-  if (error) {
-    return res.status(500).json({ message: "Error uploading image" });
-  }
-  const imageUrl = result.secure_url;
-  res.status(200).json({ imageUrl });
-}); */
