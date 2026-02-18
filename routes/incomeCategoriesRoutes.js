@@ -1,5 +1,9 @@
 const express = require("express");
-const { addIncomeCategory, getAllIncomeCategory, getIncomeCategoriesByType } = require("../controllers/IncomeCategoryController");
+const {
+  addIncomeCategory,
+  getAllIncomeCategory,
+  getIncomeCategoriesByType,
+} = require("../controllers/incomeCategoryController");
 
 
 
