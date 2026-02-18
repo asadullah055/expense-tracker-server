@@ -21,8 +21,14 @@ app.use(
 );
 
 app.use(express.json());
-connectDB().catch((error) => {
-  console.error("Database connection failed:", error.message);
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("Database connection failed:", error.message);
+    res.status(500).json({ message: "Database connection failed" });
+  }
 });
 
 app.use("/api/v1/auth", authRoutes); 
